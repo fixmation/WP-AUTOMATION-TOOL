@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - WordPress Automation Tool</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='chat.css') }}" rel="stylesheet">
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</head>
+
+<body>
+    {% include 'bubble_background.html' %}
+    {% include 'header.html' %}
+
+    <div class="container-fluid mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                    <div class="pricing-card chat-container" style="background: rgba(255, 212, 239, 0.2);">
+                    <h2 class="text-center mb-4">AI Assistant</h2>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message system">
+                        Hello!👋 I'm your AI assistant. How can I help you?
+                        </div>
+                    </div>
+
+                    <form class="chat-input-form" id="chatForm">
+                        <div class="input-group">
+                            <input type="text" id="messageInput" placeholder="Type a message..." />
+                            <button type="submit" class="square-button" id="sendButton">Send</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const chatForm = document.getElementById('chatForm');
+          const messageInput = document.getElementById('messageInput');
+          const sendButton = document.getElementById('sendButton');
+      
+          chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+      
+            const message = messageInput.value.trim();
+            if (!message) return;
+      
+            // Optional loading state
+            sendButton.disabled = true;
+            sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending';
+      
+            addMessage(message, 'user');
+            messageInput.value = '';
+      
+            try {
+              const response = await fetch('/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+              });
+      
+              const data = await response.json();
+              addMessage(data.response || 'No reply', 'ai');
+      
+            } catch (error) {
+              console.error('Error:', error);
+              addMessage('Sorry, there was an error processing your request.', 'system');
+            } finally {
+              sendButton.disabled = false;
+              sendButton.innerHTML = 'Send';
+            }
+          });
+      
+          function addMessage(text, type) {
+            const messages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            // Process markdown links [text](url) in the message
+            const processedText = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(match, linkText, url) {
+                // For internal links that don't start with http
+                if (!url.startsWith('http')) {
+                    return `<a href="${url}" class="chat-link" onclick="window.location.href='${url}'; return false;">${linkText}</a>`;
+                }
+                // For external links
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="chat-link">${linkText}</a>`;
+            });
+            
+            messageDiv.innerHTML = processedText;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+            
+            // Make all links in the message clickable
+            const links = messageDiv.querySelectorAll('a');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    if(!this.getAttribute('target')) {
+                        e.preventDefault();
+                        window.location.href = this.getAttribute('href');
+                    }
+                });
+            });
+          }
+        });
+      </script>
+      
+    {% include 'footer.html' %}
+</body>
+
+</html>

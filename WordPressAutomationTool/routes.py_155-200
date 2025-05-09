@@ -1,0 +1,29 @@
+@app.route("/generate_content", methods=['GET', 'POST'])
+@login_required
+def generate_content():
+    try:
+        # Get the latest WordPress installation
+        wp_install = WordPressInstallation.query.filter_by(
+            server_id=current_user.server_connections[-1].id
+        ).order_by(WordPressInstallation.id.desc()).first()
+        
+        if not wp_install or not wp_install.category_id:
+            flash('Please select a website category first')
+            return redirect(url_for('website_category'))
+        
+        # Get the category name
+        category = WebsiteCategory.query.get(wp_install.category_id)
+        
+        if request.method == 'POST':
+            # TODO: Implement content generation based on selected plan
+            pass
+        
+        return render_template('generate_content.html',
+                              category=category,
+                              current_stage=6,
+                              total_stages=8)
+    
+    except Exception as e:
+        logger.error(f"Error generating content: {e}")
+        flash(f'An error occurred: {str(e)}')
+        return redirect(url_for('generate_menu'))
